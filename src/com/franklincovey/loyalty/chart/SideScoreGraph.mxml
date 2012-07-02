@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml"
+		 width="100%"
+		 height="100%">
+	<mx:Style>
+		.scoreGraphColumnChartHorizontalAxis {
+			text-align: center;
+			font-size:8;
+		}
+		
+		.scoreGraphColumnChart {
+			horizontalAxisStyleName:scoreGraphColumnChartHorizontalAxis;
+		}
+	</mx:Style>
+	<mx:Script>
+		<![CDATA[
+			import com.franklincovey.loyalty.chart.api.IScoreGraphManager;
+			import com.franklincovey.loyalty.chart.api.ScoreGraphEvent;
+			
+			import flash.utils.setTimeout;
+			
+			import mx.charts.events.ChartItemEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ItemClickEvent;
+
+			private var _manager:IScoreGraphManager;
+
+			[Bindable]
+			public function get manager():IScoreGraphManager {
+				return _manager;
+			}
+
+			public function set manager(value:IScoreGraphManager):void {
+				_manager = value;
+				_manager.addEventListener(ScoreGraphEvent.SIDE_GRAPH_CHANGED, handleConfigChanged);
+				handleConfigChanged();
+			}
+
+			public function handleConfigChanged(event:ScoreGraphEvent = null):void {
+				if (!manager || !manager.hasSideGraph)
+					return;
+				
+				width = manager.sideGraphConfig.width;
+				columnChart.dataProvider = manager.sideGraphConfig.data
+				columnChart.series = manager.sideGraphConfig.series
+				columnChart.horizontalAxis = manager.sideGraphConfig.chartHorizontalAxis
+				columnChart.verticalAxis = manager.sideGraphConfig.chartVerticalAxis;
+				graphTitle.text = manager.sideGraphConfig.title;
+			}
+		]]>
+	</mx:Script>
+	<mx:Fade id="fadeInEffect"
+			 duration="500"
+			 alphaFrom="0.0"
+			 alphaTo="1.0"/>
+	<mx:Fade id="fadeOutEffect"
+			 duration="500"
+			 alphaFrom="1.0"
+			 alphaTo="0.0"/>
+
+	<mx:HBox paddingTop="3"
+			 paddingBottom="3"
+			 paddingRight="3"
+			 verticalAlign="middle"
+			 width="100%">
+		<mx:Label styleName="scoreChartTitleStyle" id="graphTitle"
+				  text="Score History "/>
+	</mx:HBox>
+	<mx:HRule width="100%"/>
+	<mx:Spacer height="5"/>
+	<mx:ViewStack id="chartViewStack"
+				  width="100%"
+				  height="100%"
+				  paddingLeft="3"
+				  paddingRight="3"
+				  paddingBottom="3">
+		<mx:Box width="100%"
+				height="100%"
+				showEffect="{fadeInEffect}"
+				hideEffect="{fadeOutEffect}">
+			<mx:ColumnChart id="columnChart"
+							styleName="scoreGraphColumnChart"
+							width="100%"
+							height="100%"
+							itemClick="manager.chartItemClick(event)"
+							seriesFilters="[]">
+			</mx:ColumnChart>
+		</mx:Box>
+	</mx:ViewStack>
+</mx:VBox>

@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="100%" horizontalScrollPolicy="off">
+	<mx:Style>
+
+		.scoreGraphColumnChartHorizontalAxis {
+			text-align: center;
+			font-size:8;
+		}
+		
+		.scoreGraphColumnChart {
+			horizontalAxisStyleName:scoreGraphColumnChartHorizontalAxis;
+		}
+		
+	</mx:Style>
+	<mx:Script>
+		<![CDATA[
+			import com.franklincovey.loyalty.chart.api.IScoreGraphManager;
+			import com.franklincovey.loyalty.chart.api.IScoreGraphReportType;
+			import com.franklincovey.loyalty.chart.api.ScoreGraphChartType;
+			import com.franklincovey.loyalty.chart.api.ScoreGraphEvent;
+			
+			import flash.net.navigateToURL;
+			import flash.utils.setTimeout;
+			
+			import mx.charts.events.ChartItemEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ItemClickEvent;
+			
+			
+			private var _manager:IScoreGraphManager;
+			
+			[Bindable]
+			public function get manager():IScoreGraphManager {
+				return _manager;
+			}
+			
+			public function set manager(value:IScoreGraphManager):void {
+				_manager = value;
+				
+				_manager.addEventListener(ScoreGraphEvent.CHART_DATA_CHANGED, handleChartDataUpdated);
+				_manager.addEventListener(ScoreGraphEvent.CHART_SERIES_CHANGED, handleChartSeriesUpdated);
+				_manager.addEventListener(ScoreGraphEvent.CHART_HORIZONTAL_AXIS_CHANGED, handleChartHorizontalAxisUpdated);
+				_manager.addEventListener(ScoreGraphEvent.CHART_VERTICAL_AXIS_CHANGED, handleChartVerticalAxisUpdated);
+				
+				handleChartHorizontalAxisUpdated();
+				handleChartVerticalAxisUpdated();
+				handleChartSeriesUpdated();
+				handleChartDataUpdated();
+			}
+			
+			private function handleChartLevelChanged(event:ScoreGraphEvent = null):void {
+				if(manager)
+					breadCrumbTrailLinkBar.selectedIndex = manager.currentLevel;
+			}
+			
+			private function handleChartReportTypeChanged(event:ScoreGraphEvent = null):void {
+				if(manager)
+					reportTypeLinkBar.selectedIndex = manager.selectedReportTypeIndex;
+			}
+			
+			private function handleChartTypeChanged(event:ScoreGraphEvent = null):void {
+				if(manager) {
+					chartTypeLinkBar.selectedIndex = manager.selectedChartTypeIndex;
+			
+					switch(manager.selectedChartType.type) {
+						case ScoreGraphChartType.COLUMN:
+						case ScoreGraphChartType.LINE:
+							chartViewStack.selectedIndex = 0;
+							break;
+						
+						case ScoreGraphChartType.PIE:
+							chartViewStack.selectedIndex = 1;
+							break;
+					}
+				}
+			}
+			
+			private function handleChartDataUpdated(event:ScoreGraphEvent = null):void {
+				if(!manager)
+					return;
+				
+				if(manager.selectedChartType.type == ScoreGraphChartType.PIE) {
+					pieChart.dataProvider = manager.data;
+				} else {
+					columnChart.dataProvider = manager.data;
+				}
+			}
+			
+			private function handleChartSeriesUpdated(event:ScoreGraphEvent = null):void {
+				if(!manager)
+					return;
+				
+				if(manager.selectedChartType.type == ScoreGraphChartType.PIE) {
+					pieChart.series = manager.chartSeries;
+				} else {
+					columnChart.series = manager.chartSeries;
+				}
+			}
+			
+			private function handleChartHorizontalAxisUpdated(event:ScoreGraphEvent = null):void {
+				if(manager && manager.selectedChartType.type != ScoreGraphChartType.PIE) {
+					columnChart.horizontalAxis = manager.chartHorizontalAxis;
+				}
+			}
+			
+			private function handleChartVerticalAxisUpdated(event:ScoreGraphEvent = null):void {
+				if(manager && manager.selectedChartType.type != ScoreGraphChartType.PIE) {
+					columnChart.verticalAxis = manager.chartVerticalAxis;
+				}
+			}
+			
+		]]>
+	</mx:Script>
+	<mx:Fade id="fadeInEffect" duration="500" alphaFrom="0.0" alphaTo="1.0"/> 
+	<mx:Fade id="fadeOutEffect" duration="500" alphaFrom="1.0" alphaTo="0.0"/>
+	
+ 	<mx:HBox paddingTop="3" paddingBottom="3" paddingRight="3" verticalAlign="middle" width="100%">
+		<mx:LinkButton styleName="scoreChartTitleStyle" click="navigateToURL(new URLRequest('http://opensource.franklincovey.com/Loyalty-Charts'))"
+				  label="Loyalty Charts Version 1.0"/>
+		<mx:Spacer width="100%"/>
+		<mx:LinkBar id="reportTypeLinkBar" updateComplete="handleChartReportTypeChanged()"
+					horizontalGap="4" visible="{manager.reportTypes.length>0}"
+					itemClick="manager.selectedReportType = IScoreGraphReportType(event.item);"
+					dataProvider="{manager.reportTypes}"/>
+	</mx:HBox>
+	<mx:HRule width="100%" />
+	<mx:Spacer height="5" />
+	<mx:HBox paddingLeft="20" paddingRight="3" horizontalGap="2" width="100%" verticalAlign="middle" fontSize="9">
+		<mx:Label text=">>" />
+		<mx:LinkBar id="breadCrumbTrailLinkBar" 
+			horizontalGap="2" textDecoration="underline"
+			dataProvider="{manager.levels}" updateComplete="handleChartLevelChanged()" 
+			itemClick="manager.currentLevel = event.index" />
+		<mx:Spacer width="100%" />
+		<mx:LinkBar id="chartTypeLinkBar" updateComplete="handleChartTypeChanged()"
+					iconField="icon" horizontalGap="4"
+					itemClick="manager.selectedChartType = ScoreGraphChartType(event.item)"
+					dataProvider="{manager.chartTypes}" />
+	</mx:HBox>
+	<mx:ViewStack id="chartViewStack" width="100%" height="100%" paddingLeft="3" paddingRight="3" paddingBottom="3" horizontalScrollPolicy="off">
+		<mx:Box width="100%" height="100%" showEffect="{fadeInEffect}" hideEffect="{fadeOutEffect}" horizontalScrollPolicy="off">
+			<mx:ColumnChart id="columnChart" styleName="scoreGraphColumnChart"
+							width="100%" height="100%"
+							itemClick="manager.chartItemClick(event)" seriesFilters="[]">
+			</mx:ColumnChart>	
+		</mx:Box>
+		<mx:HBox width="100%" height="100%" showEffect="{fadeInEffect}" hideEffect="{fadeOutEffect}" horizontalAlign="center" horizontalScrollPolicy="off">
+			<mx:Legend paddingLeft="50" paddingTop="50" direction="horizontal" dataProvider="{pieChart}" />
+			<mx:PieChart id="pieChart"
+						 width="100%" height="100%" showDataTips="true"
+						 itemClick="manager.chartItemClick(event)" seriesFilters="[]">
+			</mx:PieChart>
+		</mx:HBox>
+	</mx:ViewStack>
+</mx:VBox>
